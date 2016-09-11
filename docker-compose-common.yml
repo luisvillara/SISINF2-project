@@ -1,0 +1,35 @@
+version: '2'
+
+services:
+  postgres:
+    image: postgres:9.5
+    volumes:
+      - ~/data/sisinf2p/postgres:/var/lib/postgresql/data
+    env_file: ./.env
+    ports:
+      - "15432:5432"
+
+  nginx:
+    env_file: ./.env
+    volumes:
+      - ./django/public/:/srv/www/django/
+      - ./run:/srv/www/run
+    working_dir: /var/www/public/
+
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile-Dev
+    env_file: ./.env
+    volumes:
+      - ./django:/srv/www/django
+    working_dir: /srv/www/django
+
+  prod:
+    extends:
+      service: dev
+    build:
+      dockerfile: Dockerfile-Prod
+    volumes:
+      - ./run:/srv/www/run
+    restart: always

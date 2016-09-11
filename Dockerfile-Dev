@@ -1,0 +1,30 @@
+FROM python:3.5
+RUN apt-get update -qq
+RUN pip install --upgrade pip
+
+ENV PYTHONUNBUFFERED 1
+
+# Not use on macOS
+# RUN echo 'Acquire::http { Proxy "http://172.17.0.2:3142"; };' >> /etc/apt/apt.conf.d/01proxy
+
+RUN apt-get install -y postgresql-client \
+    gcc gettext \
+    libcairo2-dev \
+    --no-install-recommends && rm -rf /var/lib/apt/lists/*
+
+COPY ./requirements/base.pip /requirements/base.pip
+COPY ./requirements/development.pip /requirements/development.pip
+
+RUN pip install setuptools --upgrade
+RUN pip install -r /requirements/development.pip \
+    -i http://172.17.0.2:3141/root/pypi/ --trusted-host 172.17.0.2 \
+    --timeout 300
+
+COPY ./compose/django/entrypoint.sh /entrypoint.sh
+RUN sed -i 's/\r//' /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Update font cache
+RUN fc-cache -f -v
+
+ENTRYPOINT ["/entrypoint.sh"]

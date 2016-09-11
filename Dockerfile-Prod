@@ -1,0 +1,26 @@
+FROM python:3.5
+
+ENV PYTHONUNBUFFERED 1
+
+RUN apt-get update -qq && apt-get install -y -qq postgresql-client \
+    gcc gettext \
+    libcairo2-dev \
+    --no-install-recommends && rm -rf /var/lib/apt/lists/*
+
+COPY ./requirements/base.pip /requirements/base.pip
+COPY ./requirements/production.pip /requirements/production.pip
+
+RUN pip install --upgrade pip setuptools
+RUN pip install -r /requirements/production.pip
+
+COPY ./compose/django/entrypoint.sh /entrypoint.sh
+RUN sed -i 's/\r//' /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Copy local fonts in an indexable place
+COPY ./src/fonts /usr/share/fonts/truetype/
+
+# Update font cache
+RUN fc-cache -f -v
+
+ENTRYPOINT ["/entrypoint.sh"]
